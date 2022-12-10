@@ -9,6 +9,8 @@ IP_Dict = {}
 def handlePacket(packet):
     print(packet.summary())
     if ICMP in packet:
+        if packet[IP].proto != 1:
+            denyPacket(packet, "Incorrect protocol field.")
         if Raw in packet:
             try:
                 data = packet[Raw].load.decode()
