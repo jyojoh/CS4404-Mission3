@@ -32,6 +32,14 @@ def handlePacket(packet):
 def allowPacket(packet):
     if not IP in packet:
         return
+
+    # normalize ttl field in IP header
+    if not packet[IP].ttl == 0:
+        if packet[IP].ttl < 3:
+            packet[IP].ttl = packet[IP].ttl - 1
+        else:
+            packet[IP].ttl = 3
+
     # Continue to next hop
     packet[Ether].src = MAC_Interface              # MAC of this device
     packet[Ether].dst = getmacbyip(packet[IP].dst) # MAC of destination IP
