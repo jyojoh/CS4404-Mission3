@@ -1,16 +1,22 @@
 from scapy.all import *
 
-interface="ens3"
+interface = "ens3"
 Device_IP = "10.64.13.2"
 MAC_Interface = get_if_hwaddr(interface)
 
 IP_Dict = {}
 
+
 def handlePacket(packet):
     print(packet.summary())
+    # Check for use of IP header protocol field as covert channel
+    if len(packet) != packet[IP].len + 14:
+        denyPacket(packet, "Invalid packet length in IP header field."
+
+    if 144 < packet[IP].proto < 253:
+        denyPacket(packet, "Invalid protocol field.")
+
     if ICMP in packet:
-        if packet[IP].proto != 1:
-            denyPacket(packet, "Incorrect protocol field.")
         if Raw in packet:
             try:
                 data = packet[Raw].load.decode()
@@ -23,13 +29,15 @@ def handlePacket(packet):
         if packet[IP].src in IP_Dict:
             prevID = IP_Dict[packet[IP].src]
             curID = packet[IP].id
-            if (not (0xFFFF - prevID < 1000)) and curID < prevID: # Check for covert channel
-                denyPacket(packet, "ID not increasing, potential C2 message.\nPrevious ID: " + str(prevID) + ", Current ID: " + str(curID))
+            if (not (0xFFFF - prevID < 1000)) and curID < prevID:  # Check for covert channel
+                denyPacket(packet, "ID not increasing, potential C2 message.\nPrevious ID: " + str(
+                    prevID) + ", Current ID: " + str(curID))
                 return
-            IP_Dict[packet[IP].src] = curID # Update ID
+            IP_Dict[packet[IP].src] = curID  # Update ID
         else:
-            IP_Dict[packet[IP].src] = packet[IP].id # Set ID
+            IP_Dict[packet[IP].src] = packet[IP].id  # Set ID
     allowPacket(packet)
+
 
 def allowPacket(packet):
     if not IP in packet:
@@ -43,20 +51,22 @@ def allowPacket(packet):
             packet[IP].ttl = 3
 
     # Continue to next hop
-    packet[Ether].src = MAC_Interface              # MAC of this device
-    packet[Ether].dst = getmacbyip(packet[IP].dst) # MAC of destination IP
+    packet[Ether].src = MAC_Interface  # MAC of this device
+    packet[Ether].dst = getmacbyip(packet[IP].dst)  # MAC of destination IP
 
     del packet.chksum
     packet = packet.__class__(bytes(packet))
 
-    #packet.show2()
+    # packet.show2()
     sendp(packet, iface=interface, verbose=False)
+
 
 def denyPacket(packet, reason):
     print(f"\033[1;31mPacket denied: {reason}")
     print("Details of rejected packet:")
     packet.show()
     print("\033[0;0m")
+
 
 if __name__ == "__main__":
     print("Running IDS on interface: " + interface + " (" + MAC_Interface + ")")
