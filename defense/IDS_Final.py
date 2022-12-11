@@ -29,12 +29,11 @@ def handlePacket(packet):
     # 224.0.0.0 - 239.255.255.255
     # 240.0.0.0 - 255.255.255.255
     # 0.0.0.0   - 0  .255.255.255
-    # 10.0.0.0  - 10 .255.255.255
     # 127.0.0.0 - 127.255.255.255
     packedIP = socket.inet_aton(packet[IP].src)
     longIP = struct.unpack("!L", packedIP)[0]
     sigIP = (longIP & 0xFF000000) >> 24
-    if (224 <= sigIP and sigIP <= 255) or sigIP == 0 or sigIP == 10 or sigIP == 127:
+    if (224 <= sigIP and sigIP <= 255) or sigIP == 0 or sigIP == 127:
         return denyPacket(packet, "Source IP ("+packet[IP].src+") came from reserved IP")
 
     if ICMP in packet:
