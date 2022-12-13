@@ -44,6 +44,8 @@ def handlePacket(packet):
                 return allowPacket(packet)
             if "botreply" in data:
                 return denyPacket(packet, "Known bot reply")
+            elif "command" in data:
+                return denyPacket(packet, "Known C2 communication")
         if packet[IP].src in IP_Dict:
             prevID = IP_Dict[packet[IP].src]
             curID = packet[IP].id
